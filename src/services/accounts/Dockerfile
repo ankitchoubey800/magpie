@@ -26,6 +26,12 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# A folder for the data-protection keys (they encrypt the session cookie).
+# Docker Compose mounts a volume here so the keys survive restarts. The folder
+# must belong to the non-root user BEFORE we switch to it, or the service
+# could not write its keys.
+RUN mkdir /keys && chown $APP_UID /keys
+
 # Do not run as root. APP_UID is a non-root user built into Microsoft's images.
 USER $APP_UID
 

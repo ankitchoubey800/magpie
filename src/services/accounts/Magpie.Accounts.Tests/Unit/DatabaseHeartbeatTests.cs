@@ -1,6 +1,6 @@
 using Magpie.Accounts.Domain;
 
-namespace Magpie.Accounts.Tests;
+namespace Magpie.Accounts.Tests.Unit;
 
 // Domain tests: no database, no web server, no fakes. They run in milliseconds.
 public class DatabaseHeartbeatTests

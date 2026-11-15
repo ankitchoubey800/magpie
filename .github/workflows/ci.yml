@@ -47,7 +47,9 @@ jobs:
       - name: Create the local settings file
         run: cp infra/.env.example infra/.env
       - name: Start everything
-        run: docker compose up --build --detach --wait
+        # No "--wait" here: the one-off migration container exits on purpose,
+        # and the retries in the next step do the waiting.
+        run: docker compose up --build --detach
       - name: One request travels gateway -> accounts -> PostgreSQL
         run: |
           curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors \
@@ -56,6 +58,21 @@ jobs:
         run: curl --fail --silent --show-error http://localhost:8080/ | grep --quiet '<div id="root">'
       - name: Accounts reports ready
         run: curl --fail --silent --show-error http://localhost:5101/health/ready
+      - name: Who-am-I without a session is refused
+        run: test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8080/api/accounts/me)" = "401"
+      - name: Full journey - register, confirm from the email, sign in, who-am-I, sign out
+        run: python3 infra/smoke/auth_flow.py
+      - name: A session survives a restart of the Accounts service
+        run: |
+          cookie=$(python3 infra/smoke/auth_flow.py http://localhost:8080 http://localhost:8025 --keep-session | sed -n 's/^SESSION_COOKIE=//p')
+          docker compose restart accounts
+          for attempt in $(seq 1 15); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --header "Cookie: magpie.session=$cookie" http://localhost:8080/api/accounts/me)
+            if [ "$status" = "200" ]; then break; fi
+            sleep 2
+          done
+          echo "who-am-I with the old cookie after restart: HTTP $status"
+          test "$status" = "200"
       - name: Break it - stop PostgreSQL
         run: |
           show() { echo "--- $1"; curl --silent --max-time 20 --write-out '\nHTTP %{http_code} %{content_type}\n' "$1" || true; }

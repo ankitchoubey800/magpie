@@ -5,13 +5,16 @@
   </ItemGroup>
 
   <!-- Infrastructure is the outer layer, so it MAY use framework types
-       (configuration, dependency injection, health checks). -->
+       (configuration, dependency injection, health checks, Identity). -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- The PostgreSQL driver (Npgsql) now arrives through the EF Core provider,
+       which guarantees the two versions match. -->
   <ItemGroup>
-    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.*" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.*" />
   </ItemGroup>
 
   <PropertyGroup>
