@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Magpie.Accounts.Application\Magpie.Accounts.Application.csproj" />
+    <ProjectReference Include="..\Magpie.Accounts.Infrastructure\Magpie.Accounts.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\Magpie.Defaults\Magpie.Defaults.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>3f02d4f3-d99e-4e58-926a-242ccc3ca2e5</UserSecretsId>
+  </PropertyGroup>
+
+</Project>

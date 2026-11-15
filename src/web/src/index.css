@@ -1,0 +1,47 @@
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  color: #1f2933;
+  background: #f5f7fa;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 40rem;
+  margin: 3rem auto;
+  padding: 0 1rem;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.card--error {
+  border-color: #e12d39;
+}
+
+.card dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0 0 1rem;
+}
+
+.card dt {
+  font-weight: 600;
+}
+
+.card dd {
+  margin: 0;
+}
+
+.muted {
+  color: #627d98;
+  font-size: 0.875rem;
+}

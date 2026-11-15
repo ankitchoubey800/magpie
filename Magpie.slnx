@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/gateway/">
+    <Project Path="src/gateway/Magpie.Gateway/Magpie.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/src/services/" />
+  <Folder Name="/src/services/accounts/">
+    <Project Path="src/services/accounts/Magpie.Accounts.Api/Magpie.Accounts.Api.csproj" />
+    <Project Path="src/services/accounts/Magpie.Accounts.Application/Magpie.Accounts.Application.csproj" />
+    <Project Path="src/services/accounts/Magpie.Accounts.Domain/Magpie.Accounts.Domain.csproj" />
+    <Project Path="src/services/accounts/Magpie.Accounts.Infrastructure/Magpie.Accounts.Infrastructure.csproj" />
+    <Project Path="src/services/accounts/Magpie.Accounts.Tests/Magpie.Accounts.Tests.csproj" />
+  </Folder>
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Magpie.Defaults/Magpie.Defaults.csproj" />
+  </Folder>
+</Solution>

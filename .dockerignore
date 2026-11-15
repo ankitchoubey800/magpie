@@ -1,0 +1,8 @@
+# Keep build output, dependencies and secrets out of Docker's build context.
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+**/.env
+.git/
+docs/

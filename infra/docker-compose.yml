@@ -1,0 +1,66 @@
+# The whole laptop environment.
+#   Start:  docker compose -f infra/docker-compose.yml up --build
+#   Stop:   docker compose -f infra/docker-compose.yml down
+#   Open:   http://localhost:8080
+# Values written as ${NAME} come from infra/.env (see infra/.env.example).
+
+name: magpie
+
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # PostgreSQL 18 images keep data under /var/lib/postgresql
+      # (older guides say /var/lib/postgresql/data; that path is wrong for 18).
+      - postgres-data:/var/lib/postgresql
+    ports:
+      # Reachable from your laptop only (127.0.0.1), for tools such as psql.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  accounts:
+    build:
+      context: ..
+      dockerfile: src/services/accounts/Dockerfile
+    environment:
+      # Two underscores stand for ":" in .NET configuration names,
+      # so this sets ConnectionStrings:AccountsDb.
+      ConnectionStrings__AccountsDb: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=5;Command Timeout=5"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Laptop-only shortcut so you can call the service's health endpoints
+      # directly during experiments. Removed in week 17, when the gateway
+      # becomes the only way in.
+      - "127.0.0.1:5101:8080"
+
+  web:
+    build:
+      context: ../src/web
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: src/gateway/Dockerfile
+    environment:
+      # Inside Docker, containers find each other by service name.
+      ReverseProxy__Clusters__accounts__Destinations__primary__Address: "http://accounts:8080/"
+      ReverseProxy__Clusters__web__Destinations__primary__Address: "http://web:8080/"
+    depends_on:
+      - accounts
+      - web
+    ports:
+      # The ONE address a browser uses.
+      - "8080:8080"
+
+volumes:
+  postgres-data:
