@@ -29,13 +29,15 @@ class Browser:
         self.last_set_cookie = []
 
     def call(self, method, path, body=None):
+        if method == "POST" and self.token is None:
+            # Fetch the token FIRST: this call also stores the anti-forgery cookie,
+            # which must travel with the POST below.
+            self.token = self.call("GET", "/api/accounts/antiforgery-token")[1]["token"]
         headers = {"Accept": "application/json"}
         if self.cookies:
             headers["Cookie"] = "; ".join(f"{name}={value}" for name, value in self.cookies.items())
         data = None
         if method == "POST":
-            if self.token is None:
-                self.token = self.call("GET", "/api/accounts/antiforgery-token")[1]["token"]
             headers["X-XSRF-TOKEN"] = self.token
             headers["Content-Type"] = "application/json"
             data = json.dumps(body or {}).encode()
