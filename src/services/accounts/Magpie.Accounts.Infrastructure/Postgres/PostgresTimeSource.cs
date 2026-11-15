@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using Magpie.Accounts.Application.Abstractions;
 using Npgsql;
 
@@ -22,9 +23,10 @@ internal sealed class PostgresTimeSource(NpgsqlDataSource dataSource) : IDatabas
             var utc = DateTime.SpecifyKind((DateTime)result!, DateTimeKind.Utc);
             return new DateTimeOffset(utc);
         }
-        catch (NpgsqlException exception)
+        catch (Exception exception) when (exception is NpgsqlException or SocketException or TimeoutException)
         {
-            // Translate the library-specific error into the application's own error type.
+            // "Could not reach the database" arrives in a few different shapes.
+            // Translate all of them into the application's own error type.
             throw new DependencyUnavailableException("postgresql", exception);
         }
     }
