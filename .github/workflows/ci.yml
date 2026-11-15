@@ -60,17 +60,19 @@ jobs:
         run: curl --fail --silent --show-error http://localhost:5101/health/ready
       - name: Who-am-I without a session is refused
         run: test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://localhost:8080/api/accounts/me)" = "401"
-      - name: Registration is accepted and an email reaches Mailpit
+      - name: Full journey - register, confirm from the email, sign in, who-am-I, sign out
+        run: python3 infra/smoke/auth_flow.py
+      - name: A session survives a restart of the Accounts service
         run: |
-          token=$(curl --fail --silent --cookie-jar jar.txt http://localhost:8080/api/accounts/antiforgery-token \
-            | python3 -c "import sys, json; print(json.load(sys.stdin)['token'])")
-          status=$(curl --silent --output /dev/null --write-out '%{http_code}' --cookie jar.txt \
-            --header "X-XSRF-TOKEN: $token" --header 'Content-Type: application/json' \
-            --data '{"email":"ci-reader@example.com","password":"correct horse battery"}' \
-            http://localhost:8080/api/accounts/register)
-          test "$status" = "202"
-          sleep 2
-          curl --fail --silent http://localhost:8025/api/v1/messages | python3 -c "import sys, json; total = json.load(sys.stdin)['total']; print('emails caught:', total); assert total == 1"
+          cookie=$(python3 infra/smoke/auth_flow.py http://localhost:8080 http://localhost:8025 --keep-session | sed -n 's/^SESSION_COOKIE=//p')
+          docker compose restart accounts
+          for attempt in $(seq 1 15); do
+            status=$(curl --silent --output /dev/null --write-out '%{http_code}' --header "Cookie: magpie.session=$cookie" http://localhost:8080/api/accounts/me)
+            if [ "$status" = "200" ]; then break; fi
+            sleep 2
+          done
+          echo "who-am-I with the old cookie after restart: HTTP $status"
+          test "$status" = "200"
       - name: Break it - stop PostgreSQL
         run: |
           show() { echo "--- $1"; curl --silent --max-time 20 --write-out '\nHTTP %{http_code} %{content_type}\n' "$1" || true; }
