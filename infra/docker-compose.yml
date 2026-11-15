@@ -1,7 +1,8 @@
 # The whole laptop environment.
 #   Start:  docker compose -f infra/docker-compose.yml up --build
 #   Stop:   docker compose -f infra/docker-compose.yml down
-#   Open:   http://localhost:8080
+#   Open:   http://localhost:8080      (the website)
+#           http://localhost:8025      (Mailpit: every email the system "sends")
 # Values written as ${NAME} come from infra/.env (see infra/.env.example).
 
 name: magpie
@@ -26,7 +27,30 @@ services:
       timeout: 3s
       retries: 10
 
+  # Catches every email instead of delivering it. Nothing leaves your laptop.
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:8025:8025"   # inbox in your browser
+      - "127.0.0.1:1025:1025"   # SMTP, for when you run Accounts with "dotnet run"
+
+  # One-off job: bring the database tables up to date, then exit.
+  # It uses the same image as the Accounts service, started with "--migrate".
+  accounts-migrate:
+    image: magpie-accounts
+    build:
+      context: ..
+      dockerfile: src/services/accounts/Dockerfile
+    command: ["--migrate"]
+    environment:
+      ConnectionStrings__AccountsDb: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=5;Command Timeout=30"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   accounts:
+    image: magpie-accounts
     build:
       context: ..
       dockerfile: src/services/accounts/Dockerfile
@@ -34,9 +58,23 @@ services:
       # Two underscores stand for ":" in .NET configuration names,
       # so this sets ConnectionStrings:AccountsDb.
       ConnectionStrings__AccountsDb: "Host=postgres;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=5;Command Timeout=5"
+      # The address readers type in their browser. Used for links in emails.
+      Accounts__PublicBaseUrl: "http://localhost:8080"
+      Accounts__DataProtectionKeysPath: "/keys"
+      Email__Host: "mailpit"
+      Email__Port: "1025"
+    volumes:
+      # Without this volume every restart would create new keys,
+      # and every reader would be signed out.
+      - accounts-keys:/keys
     depends_on:
       postgres:
         condition: service_healthy
+      accounts-migrate:
+        # Start only after the tables exist.
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
     ports:
       # Laptop-only shortcut so you can call the service's health endpoints
       # directly during experiments. Removed in week 17, when the gateway
@@ -64,3 +102,4 @@ services:
 
 volumes:
   postgres-data:
+  accounts-keys:

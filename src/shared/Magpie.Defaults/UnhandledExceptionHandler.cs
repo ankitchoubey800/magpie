@@ -6,8 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Magpie.Defaults;
 
 /// <summary>
-/// Last line of defence: turns any unexpected exception into a 500 Problem Details
-/// response. The full exception goes to the log; the caller only sees a safe message.
+/// Last line of defence: turns any exception nobody else handled into a Problem
+/// Details response (500, or 400 when the request itself could not be read). The full exception goes to the log; the caller only sees a safe message.
 /// </summary>
 internal sealed class UnhandledExceptionHandler(
     IProblemDetailsService problemDetailsService,
@@ -18,6 +18,23 @@ internal sealed class UnhandledExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
+        // A request we could not even read (broken JSON, for example) is the
+        // caller's mistake, not ours: answer 400 and do not log it as an error.
+        if (exception is BadHttpRequestException badRequest)
+        {
+            httpContext.Response.StatusCode = badRequest.StatusCode;
+            return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+            {
+                HttpContext = httpContext,
+                ProblemDetails = new ProblemDetails
+                {
+                    Status = badRequest.StatusCode,
+                    Title = "The request could not be read",
+                    Detail = "Check that the request body is valid JSON with the expected fields.",
+                },
+            });
+        }
+
         logger.LogError(exception, "Unhandled exception for {Method} {Path}",
             httpContext.Request.Method, httpContext.Request.Path);
 

@@ -1,40 +1,69 @@
 using Magpie.Accounts.Application.Abstractions;
+using Magpie.Accounts.Infrastructure.Email;
+using Magpie.Accounts.Infrastructure.Identity;
+using Magpie.Accounts.Infrastructure.Persistence;
 using Magpie.Accounts.Infrastructure.Postgres;
-using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Npgsql;
 
 namespace Magpie.Accounts.Infrastructure;
 
 public static class DependencyInjection
 {
-    /// <summary>The name of the connection string in configuration.</summary>
-    public const string ConnectionStringName = "AccountsDb";
-
-    public static IServiceCollection AddAccountsInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddAccountsInfrastructure(this IServiceCollection services)
     {
-        // ONE data source for the whole process (singleton). It owns the
-        // connection pool, so creating it per request would defeat the pool.
-        // The container disposes it when the application shuts down.
-        services.AddSingleton(_ =>
-        {
-            var connectionString = configuration.GetConnectionString(ConnectionStringName)
-                ?? throw new InvalidOperationException(
-                    $"Connection string '{ConnectionStringName}' is missing. " +
-                    "Set it with user-secrets (local run) or the " +
-                    $"ConnectionStrings__{ConnectionStringName} environment variable (containers).");
+        // --- Settings: read from configuration, checked when the service starts ---
+        services.AddOptions<PostgresOptions>()
+            .BindConfiguration(PostgresOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            return NpgsqlDataSource.Create(connectionString);
-        });
+        services.AddOptions<EmailOptions>()
+            .BindConfiguration(EmailOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        // "When someone asks for the port, give them the PostgreSQL adapter."
+        // --- PostgreSQL: one connection pool for the whole process ---
+        services.AddSingleton(serviceProvider =>
+            NpgsqlDataSource.Create(serviceProvider.GetRequiredService<IOptions<PostgresOptions>>().Value.AccountsDb!));
+
         services.AddScoped<IDatabaseTimeSource, PostgresTimeSource>();
-
-        // "ready" tag = included in /health/ready, NOT in /health/live.
         services.AddHealthChecks()
             .AddCheck<PostgresHealthCheck>("postgresql", tags: ["ready"]);
+
+        services.AddAccountsDbContext();
+
+        // --- Accounts: ASP.NET Core Identity ---
+        services.AddIdentityCore<ApplicationUser>(options =>
+            {
+                // Password rules: length matters far more than forcing symbols.
+                options.Password.RequiredLength = 10;
+                options.Password.RequiredUniqueChars = 4;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+
+                options.User.RequireUniqueEmail = true;
+
+                // No signing in until the email address is proven to be yours.
+                options.SignIn.RequireConfirmedEmail = true;
+
+                // Five wrong passwords in a row: wait five minutes.
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            })
+            .AddSignInManager()
+            .AddDefaultTokenProviders()
+            .AddAccountsStores();
+
+        services.AddScoped<IReaderAccounts, IdentityReaderAccounts>();
+
+        // --- Email ---
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;
     }

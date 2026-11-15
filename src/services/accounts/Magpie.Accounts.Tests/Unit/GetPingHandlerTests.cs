@@ -2,7 +2,7 @@ using Magpie.Accounts.Application.Abstractions;
 using Magpie.Accounts.Application.Ping;
 using Magpie.Accounts.Tests.Fakes;
 
-namespace Magpie.Accounts.Tests;
+namespace Magpie.Accounts.Tests.Unit;
 
 // Application tests: the use case runs for real, the database is a fake.
 public class GetPingHandlerTests

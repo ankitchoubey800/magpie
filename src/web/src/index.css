@@ -45,3 +45,47 @@ main {
   color: #627d98;
   font-size: 0.875rem;
 }
+
+/* --- Week 2: forms and notices --- */
+.card + .card {
+  margin-top: 1rem;
+}
+
+form label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+form input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  font: inherit;
+  border: 1px solid #9fb3c8;
+  border-radius: 0.25rem;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.notice {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.notice--error {
+  background: #ffe3e3;
+  border: 1px solid #e12d39;
+}
+
+.notice ul,
+.notice p {
+  margin: 0.25rem 0 0;
+}
