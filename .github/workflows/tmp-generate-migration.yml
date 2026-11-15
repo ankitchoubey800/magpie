@@ -1,0 +1,30 @@
+# TEMPORARY: generates the first EF Core migration on a GitHub runner and prints it,
+# because the authoring environment cannot reach NuGet. Deleted once the migration is committed.
+name: tmp-generate-migration
+on:
+  push:
+    branches: [week-02]
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+      - run: dotnet tool install --global dotnet-ef --version "10.0.*"
+      - run: dotnet build Magpie.slnx 2>&1 | tail -40
+      - name: Create migration
+        env:
+          ConnectionStrings__AccountsDb: "Host=localhost;Database=design_time_only"
+        run: |
+          dotnet ef migrations add InitialIdentity \
+            --project src/services/accounts/Magpie.Accounts.Infrastructure \
+            --startup-project src/services/accounts/Magpie.Accounts.Api \
+            --output-dir Persistence/Migrations
+          ls -la src/services/accounts/Magpie.Accounts.Infrastructure/Persistence/Migrations
+          dotnet list src/services/accounts/Magpie.Accounts.Infrastructure package --include-transitive | grep -iE "npgsql|EntityFramework|Identity" || true
+          echo "MIGRATION_TAR_BEGIN"
+          tar czf - -C src/services/accounts/Magpie.Accounts.Infrastructure Persistence/Migrations | base64 -w0
+          echo
+          echo "MIGRATION_TAR_END"
