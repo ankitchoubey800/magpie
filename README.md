@@ -3,7 +3,7 @@
 An interest-feed platform (articles, videos and posts gathered by topic) built
 week by week as a production-grade software architecture learning project.
 
-**Status:** Week 2, sign-up and sign-in with email confirmation.
+**Status:** Week 5. Accounts (sign-up, sign-in, Google, reset, interests) and a collector that gathers content from RSS feeds and Hacker News.
 
 ## What runs today
 
@@ -36,8 +36,11 @@ cd src/web && npm ci && npm test
 |---|---|
 | `src/gateway/` | The single front door (YARP reverse proxy) |
 | `src/services/accounts/` | Accounts service: Api, Application, Domain, Infrastructure, Tests |
+| `src/services/collector/` | Collector worker: Domain, Application, Infrastructure, Worker, Tests |
+| `src/shared/Magpie.Mediator/` | The small mediator used to dispatch use cases |
+| `e2e/` | Browser tests (Playwright) |
 | `src/shared/Magpie.Defaults/` | Logging, error format and health checks shared by every service |
 | `src/web/` | React + TypeScript website |
-| `infra/` | Docker Compose for the laptop |
+| `infra/` | Docker Compose for the laptop, seed data, smoke scripts and experiments |
 | `docs/adr/` | Architecture decision records |
 | `docs/design-notes/` | One-page weekly design notes |
