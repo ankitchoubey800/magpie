@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Magpie.Collector.Application\Magpie.Collector.Application.csproj" />
+    <ProjectReference Include="..\Magpie.Collector.Infrastructure\Magpie.Collector.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\Magpie.Defaults\Magpie.Defaults.csproj" />
+  </ItemGroup>
+
+  <!-- Needed only by the "dotnet ef" command-line tool that creates migrations. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.*">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Lets the test project see the Program class. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Magpie.Collector.Tests" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

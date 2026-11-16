@@ -51,6 +51,15 @@ jobs:
         run: |
           cp infra/.env.example infra/.env
           sed -i 's/^AUTH_REQUESTS_PER_MINUTE=.*/AUTH_REQUESTS_PER_MINUTE=1000/' infra/.env
+          # CI must never visit real websites. The collector is pointed at a
+          # small server of deliberately badly behaved "sources" on this machine,
+          # with short time limits so the experiment finishes quickly.
+          sed -i 's|^COLLECTOR_SEED_FILE=.*|COLLECTOR_SEED_FILE=./experiments/bad-sources/sources.json|' infra/.env
+          sed -i 's/^COLLECTOR_TICK_SECONDS=.*/COLLECTOR_TICK_SECONDS=3/' infra/.env
+          echo 'COLLECTOR_PER_SOURCE_TIMEOUT_SECONDS=12' >> infra/.env
+          echo 'COLLECTOR_HTTP_TIMEOUT_SECONDS=2' >> infra/.env
+      - name: Start the badly behaved sources
+        run: nohup python3 infra/experiments/bad-sources/server.py > bad-sources.log 2>&1 &
       - name: Start everything
         # No "--wait" here: the one-off migration container exits on purpose,
         # and the retries in the next step do the waiting.
@@ -78,6 +87,23 @@ jobs:
           done
           echo "who-am-I with the old cookie after restart: HTTP $status"
           test "$status" = "200"
+      - name: Break it - one hanging source and one talking nonsense do not stop the others
+        run: |
+          query() { docker compose exec -T postgres psql -U magpie -d magpie_collector -tA -c "$1"; }
+          curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors http://localhost:5102/health/ready; echo
+          # Wait until every source has been visited once (the hanging one uses its whole time budget).
+          for attempt in $(seq 1 30); do
+            [ "$(query 'SELECT count(*) FROM sources WHERE "LastFetchedAtUtc" IS NULL')" = "0" ] && break
+            sleep 2
+          done
+          docker compose exec -T postgres psql -U magpie -d magpie_collector -c \
+            'SELECT s."Name" AS source, count(i."Id") AS items, s."ConsecutiveFailures" AS failures, coalesce(s."LastError", $$ $$) AS last_error
+               FROM sources s LEFT JOIN collected_items i ON i."SourceId" = s."Id" GROUP BY s."Id" ORDER BY s."Name";'
+          echo "--- what the sources saw (first lines):"; head -n 4 bad-sources.log
+          test "$(query $$SELECT count(*) FROM collected_items i JOIN sources s ON s."Id" = i."SourceId" WHERE s."Name" = '1 good'$$)" = "3"
+          test "$(query $$SELECT count(*) FROM collected_items i JOIN sources s ON s."Id" = i."SourceId" WHERE s."Name" = '2 flaky'$$)" = "3"
+          test "$(query $$SELECT count(*) FROM sources WHERE "ConsecutiveFailures" = 1 AND "Name" IN ('3 garbage', '4 hang', '5 huge')$$)" = "3"
+          curl --fail --silent --show-error http://localhost:5102/health/live; echo
       - uses: actions/setup-node@v5
         with:
           node-version: 26
@@ -92,6 +118,9 @@ jobs:
       - name: Show Accounts logs if the browser tests failed
         if: failure()
         run: docker compose logs accounts gateway --no-color --tail 200
+      - name: Show collector logs
+        if: always()
+        run: docker compose logs collector collector-migrate --no-color --tail 60
       - name: Experiment - what an index buys and costs (5,000,000 rows)
         run: |
           docker compose exec -T postgres psql -U magpie -d magpie_accounts \

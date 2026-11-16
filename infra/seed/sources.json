@@ -1,0 +1,19 @@
+[
+  // The starter list of places the collector visits.
+  //
+  // BEFORE you add a source: read its terms of use and note them in your
+  // "source terms" sheet (the week 5 non-technical task). We only ever keep a
+  // title, a short snippet and a link back to the original.
+  //
+  // "type" is Rss (also used for Atom feeds) or HackerNews.
+  // "categoryHint" is the slug of a topic from the Accounts service, or null.
+  // "fetchIntervalMinutes" may not be lower than 5.
+  { "name": "Hacker News: top stories", "type": "HackerNews", "address": "https://hacker-news.firebaseio.com/v0/topstories.json", "categoryHint": "programming", "fetchIntervalMinutes": 15 },
+  { "name": "The GitHub Blog", "type": "Rss", "address": "https://github.blog/feed/", "categoryHint": "programming", "fetchIntervalMinutes": 60 },
+  { "name": ".NET Blog", "type": "Rss", "address": "https://devblogs.microsoft.com/dotnet/feed/", "categoryHint": "programming", "fetchIntervalMinutes": 120 },
+  { "name": "AWS News Blog", "type": "Rss", "address": "https://aws.amazon.com/blogs/aws/feed/", "categoryHint": "cloud-devops", "fetchIntervalMinutes": 120 },
+  { "name": "The Cloudflare Blog", "type": "Rss", "address": "https://blog.cloudflare.com/rss/", "categoryHint": "cloud-devops", "fetchIntervalMinutes": 120 },
+  { "name": "Martin Fowler", "type": "Rss", "address": "https://martinfowler.com/feed.atom", "categoryHint": "programming", "fetchIntervalMinutes": 240 },
+  { "name": "Kubernetes Blog", "type": "Rss", "address": "https://kubernetes.io/feed.xml", "categoryHint": "cloud-devops", "fetchIntervalMinutes": 240 },
+  { "name": "NASA", "type": "Rss", "address": "https://www.nasa.gov/feed/", "categoryHint": "space", "fetchIntervalMinutes": 120 }
+]

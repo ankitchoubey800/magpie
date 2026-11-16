@@ -1,0 +1,9 @@
+[
+  // Sources for the week 5 break-it experiment. They all point at
+  // infra/experiments/bad-sources/server.py running on YOUR machine.
+  { "name": "1 good", "type": "Rss", "address": "http://host.docker.internal:9099/good.xml", "categoryHint": "programming", "fetchIntervalMinutes": 5 },
+  { "name": "2 flaky", "type": "Rss", "address": "http://host.docker.internal:9099/flaky", "categoryHint": "programming", "fetchIntervalMinutes": 5 },
+  { "name": "3 garbage", "type": "Rss", "address": "http://host.docker.internal:9099/garbage", "categoryHint": null, "fetchIntervalMinutes": 5 },
+  { "name": "4 hang", "type": "Rss", "address": "http://host.docker.internal:9099/hang", "categoryHint": null, "fetchIntervalMinutes": 5 },
+  { "name": "5 huge", "type": "Rss", "address": "http://host.docker.internal:9099/huge", "categoryHint": null, "fetchIntervalMinutes": 5 }
+]
