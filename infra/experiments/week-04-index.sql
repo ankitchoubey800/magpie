@@ -49,7 +49,10 @@ WHERE "ReaderId" = '00000000-0000-0000-0000-00000000002a' AND "CategoryId" = 204
 \echo
 \echo === 4. Build the index (this is the one-off cost in time) ===
 CREATE INDEX ix_user_interests_category ON lab.user_interests ("CategoryId");
-ANALYZE lab.user_interests;
+-- VACUUM tidies up after the big load and records which pages are "all settled".
+-- PostgreSQL needs that record before it will answer a question from an index
+-- alone (step 6). On a live database it happens automatically in the background.
+VACUUM (ANALYZE) lab.user_interests;
 
 \echo
 \echo === 5. The same question as step 2, WITH the index ===
