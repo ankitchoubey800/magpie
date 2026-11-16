@@ -10,7 +10,6 @@ import json
 import re
 import sys
 import time
-import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -20,41 +19,7 @@ EMAIL = f"smoke-{int(time.time())}@example.com"
 PASSWORD = "correct horse battery"
 
 
-class Browser:
-    """A very small pretend browser: remembers cookies, sends the anti-forgery header."""
-
-    def __init__(self):
-        self.cookies = {}
-        self.token = None
-        self.last_set_cookie = []
-
-    def call(self, method, path, body=None):
-        if method == "POST" and self.token is None:
-            # Fetch the token FIRST: this call also stores the anti-forgery cookie,
-            # which must travel with the POST below.
-            self.token = self.call("GET", "/api/accounts/antiforgery-token")[1]["token"]
-        headers = {"Accept": "application/json"}
-        if self.cookies:
-            headers["Cookie"] = "; ".join(f"{name}={value}" for name, value in self.cookies.items())
-        data = None
-        if method == "POST":
-            headers["X-XSRF-TOKEN"] = self.token
-            headers["Content-Type"] = "application/json"
-            data = json.dumps(body or {}).encode()
-        request = urllib.request.Request(SITE + path, data=data, headers=headers, method=method)
-        try:
-            response = urllib.request.urlopen(request, timeout=20)
-        except urllib.error.HTTPError as error:
-            response = error
-        self.last_set_cookie = response.headers.get_all("Set-Cookie") or []
-        for line in self.last_set_cookie:
-            name, value = line.split(";")[0].split("=", 1)
-            if value:
-                self.cookies[name] = value
-            else:
-                self.cookies.pop(name, None)
-        text = response.read().decode()
-        return response.status, (json.loads(text) if text else None)
+from browser import Browser
 
 
 def expect(label, actual, wanted):
@@ -76,7 +41,7 @@ def confirmation_link_from_mailpit():
     sys.exit("no confirmation email arrived in Mailpit")
 
 
-browser = Browser()
+browser = Browser(SITE)
 expect("who-am-I before signing in", browser.call("GET", "/api/accounts/me")[0], 401)
 expect("register", browser.call("POST", "/api/accounts/register", {"email": EMAIL, "password": PASSWORD})[0], 202)
 expect("sign in before confirming", browser.call("POST", "/api/accounts/sign-in", {"email": EMAIL, "password": PASSWORD})[0], 401)
@@ -104,7 +69,7 @@ copied_cookie = browser.cookies["magpie.session"]
 expect("sign out", browser.call("POST", "/api/accounts/sign-out")[0], 204)
 expect("who-am-I after signing out", browser.call("GET", "/api/accounts/me")[0], 401)
 
-thief = Browser()
+thief = Browser(SITE)
 thief.cookies["magpie.session"] = copied_cookie
 print("note who-am-I with a COPIED cookie after sign-out:", thief.call("GET", "/api/accounts/me")[0],
       "(200 here is the week 2 break-it finding, see the chapter)")

@@ -42,17 +42,23 @@ public sealed partial class ApiSession(HttpClient client)
         (await PostAsync("/api/accounts/confirm-email", new { readerId, token })).EnsureSuccessStatusCode();
     }
 
-    public static (string ReaderId, string Token) ReadConfirmationLink(string emailBody)
+    public static (string ReaderId, string Token) ReadConfirmationLink(string emailBody) =>
+        ReadLink(emailBody, "confirm-email");
+
+    public static (string ReaderId, string Token) ReadResetLink(string emailBody) =>
+        ReadLink(emailBody, "reset-password");
+
+    private static (string ReaderId, string Token) ReadLink(string emailBody, string page)
     {
-        var match = ConfirmationLink().Match(emailBody);
-        if (!match.Success)
+        var match = AccountLink().Match(emailBody);
+        if (!match.Success || match.Groups["page"].Value != page)
         {
-            throw new InvalidOperationException("No confirmation link found in: " + emailBody);
+            throw new InvalidOperationException($"No {page} link found in: {emailBody}");
         }
 
         return (Uri.UnescapeDataString(match.Groups["id"].Value), Uri.UnescapeDataString(match.Groups["token"].Value));
     }
 
-    [GeneratedRegex(@"/confirm-email\?readerId=(?<id>[^&\s]+)&token=(?<token>\S+)")]
-    private static partial Regex ConfirmationLink();
+    [GeneratedRegex(@"/(?<page>confirm-email|reset-password)\?readerId=(?<id>[^&\s]+)&token=(?<token>\S+)")]
+    private static partial Regex AccountLink();
 }

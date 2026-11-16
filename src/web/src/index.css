@@ -89,3 +89,18 @@ button {
 .notice p {
   margin: 0.25rem 0 0;
 }
+
+/* --- Week 3 --- */
+.notice--info {
+  background: #e3f8ff;
+  border: 1px solid #40c3f7;
+}
+
+.button-link {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid #9fb3c8;
+  border-radius: 0.25rem;
+  text-decoration: none;
+  color: inherit;
+}

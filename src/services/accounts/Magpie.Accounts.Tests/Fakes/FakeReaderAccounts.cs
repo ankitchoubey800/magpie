@@ -63,4 +63,32 @@ public sealed class FakeReaderAccounts : IReaderAccounts
         Task.FromResult(_byEmail.TryGetValue(email.Value, out var account) && account.Confirmed && account.Password == password);
 
     public Task SignOutAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task<PasswordResetTicket?> CreatePasswordResetAsync(EmailAddress email, CancellationToken cancellationToken)
+    {
+        PasswordResetTicket? ticket =
+            _byEmail.TryGetValue(email.Value, out var account) && account.Confirmed
+                ? new PasswordResetTicket(account.Id, "reset-for-" + account.Id)
+                : null;
+
+        return Task.FromResult(ticket);
+    }
+
+    public Task<ResetPasswordResult> ResetPasswordAsync(
+        string readerId, string token, string newPassword, CancellationToken cancellationToken)
+    {
+        var entry = _byEmail.FirstOrDefault(pair => pair.Value.Id == readerId);
+        if (entry.Value is null || token != "reset-for-" + readerId)
+        {
+            return Task.FromResult(ResetPasswordResult.InvalidLink);
+        }
+
+        if (newPassword.Length < MinimumPasswordLength)
+        {
+            return Task.FromResult(ResetPasswordResult.Rejected(["Password is too short."]));
+        }
+
+        _byEmail[entry.Key] = entry.Value with { Password = newPassword };
+        return Task.FromResult(ResetPasswordResult.Done);
+    }
 }

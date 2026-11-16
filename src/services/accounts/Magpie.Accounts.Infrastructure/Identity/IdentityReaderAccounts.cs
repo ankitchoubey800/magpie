@@ -61,12 +61,7 @@ internal sealed class IdentityReaderAccounts(
             return false;
         }
 
-        string rawToken;
-        try
-        {
-            rawToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-        }
-        catch (FormatException)
+        if (!TryFromLinkSafe(token, out var rawToken))
         {
             // Someone edited the link. Treat it like any other invalid token.
             return false;
@@ -88,13 +83,69 @@ internal sealed class IdentityReaderAccounts(
 
     public Task SignOutAsync(CancellationToken cancellationToken) => signIn.SignOutAsync();
 
+    public async Task<PasswordResetTicket?> CreatePasswordResetAsync(
+        EmailAddress email, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByEmailAsync(email.Value);
+        if (user is null || !user.EmailConfirmed)
+        {
+            return null;
+        }
+
+        var rawToken = await users.GeneratePasswordResetTokenAsync(user);
+        return new PasswordResetTicket(user.Id.ToString(), ToLinkSafe(rawToken));
+    }
+
+    public async Task<ResetPasswordResult> ResetPasswordAsync(
+        string readerId, string token, string newPassword, CancellationToken cancellationToken)
+    {
+        var user = await users.FindByIdAsync(readerId);
+        if (user is null || !TryFromLinkSafe(token, out var rawToken))
+        {
+            return ResetPasswordResult.InvalidLink;
+        }
+
+        // On success Identity also changes the account's "security stamp". That one
+        // change does two jobs: this token can never be used again, and every
+        // session cookie issued before now stops being accepted.
+        var result = await users.ResetPasswordAsync(user, rawToken, newPassword);
+        if (!result.Succeeded)
+        {
+            return result.Errors.Any(error => error.Code == nameof(IdentityErrorDescriber.InvalidToken))
+                ? ResetPasswordResult.InvalidLink
+                : ResetPasswordResult.Rejected(result.Errors.Select(error => error.Description).ToList());
+        }
+
+        // The reader has proven they own the mailbox, so lift any lockout caused
+        // by earlier wrong guesses (their own or an attacker's).
+        await users.SetLockoutEndDateAsync(user, null);
+        await users.ResetAccessFailedCountAsync(user);
+
+        return ResetPasswordResult.Done;
+    }
+
     private async Task<PendingConfirmation> CreateConfirmationAsync(ApplicationUser user)
     {
-        // The raw token contains characters such as "+" and "/" that get mangled
-        // inside a web address, so we re-encode it in a link-safe alphabet.
         var rawToken = await users.GenerateEmailConfirmationTokenAsync(user);
-        var linkSafeToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(rawToken));
+        return new PendingConfirmation(user.Id.ToString(), ToLinkSafe(rawToken));
+    }
 
-        return new PendingConfirmation(user.Id.ToString(), linkSafeToken);
+    // A raw token contains characters such as "+" and "/" that get mangled
+    // inside a web address, so we re-encode it in a link-safe alphabet.
+    private static string ToLinkSafe(string rawToken) =>
+        WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(rawToken));
+
+    private static bool TryFromLinkSafe(string linkSafeToken, out string rawToken)
+    {
+        try
+        {
+            rawToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(linkSafeToken));
+            return true;
+        }
+        catch (FormatException)
+        {
+            rawToken = "";
+            return false;
+        }
     }
 }

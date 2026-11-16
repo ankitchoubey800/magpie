@@ -12,6 +12,10 @@ public sealed record ConfirmEmailRequest(string? ReaderId, string? Token);
 
 public sealed record SignInRequest(string? Email, string? Password);
 
+public sealed record ForgotPasswordRequest(string? Email);
+
+public sealed record ResetPasswordRequest(string? ReaderId, string? Token, string? NewPassword);
+
 public sealed record AntiforgeryTokenResponse(string Token);
 
 public sealed record CurrentReaderResponse(string Id, string Email);

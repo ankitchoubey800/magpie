@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Magpie.Accounts.Api.Security;
 using Magpie.Accounts.Application.Abstractions;
+using Magpie.Accounts.Application.PasswordReset;
 using Magpie.Accounts.Application.Registration;
 using Magpie.Accounts.Application.SignIn;
 using Microsoft.AspNetCore.Antiforgery;
@@ -33,14 +34,14 @@ public static class AuthEndpoints
                 ? Results.Accepted()
                 : Results.ValidationProblem(
                     new Dictionary<string, string[]> { ["registration"] = [.. outcome.Errors] });
-        });
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
 
         group.MapPost("/resend-confirmation", async (
             ResendConfirmationRequest request, ResendConfirmationHandler handler, CancellationToken cancellationToken) =>
         {
             await handler.HandleAsync(request.Email, cancellationToken);
             return Results.Accepted();
-        });
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
 
         group.MapPost("/confirm-email", async (
             ConfirmEmailRequest request, ConfirmEmailHandler handler, CancellationToken cancellationToken) =>
@@ -53,7 +54,7 @@ public static class AuthEndpoints
                     statusCode: StatusCodes.Status400BadRequest,
                     title: "This confirmation link does not work",
                     detail: "It may have expired or been copied incompletely. Ask for a new one.");
-        });
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
 
         group.MapPost("/sign-in", async (
             SignInRequest request, SignInHandler handler, CancellationToken cancellationToken) =>
@@ -68,7 +69,32 @@ public static class AuthEndpoints
                     title: "Sign-in failed",
                     detail: "Check your email and password. If you have just registered, confirm your email first. " +
                             "After several failed attempts you must wait a few minutes.");
-        });
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
+
+        group.MapPost("/forgot-password", async (
+            ForgotPasswordRequest request, RequestPasswordResetHandler handler, CancellationToken cancellationToken) =>
+        {
+            await handler.HandleAsync(request.Email, cancellationToken);
+            return Results.Accepted();
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
+
+        group.MapPost("/reset-password", async (
+            ResetPasswordRequest request, ResetPasswordHandler handler, CancellationToken cancellationToken) =>
+        {
+            var result = await handler.HandleAsync(
+                request.ReaderId, request.Token, request.NewPassword, cancellationToken);
+
+            return result.Status switch
+            {
+                ResetPasswordStatus.Done => Results.NoContent(),
+                ResetPasswordStatus.RejectedPassword => Results.ValidationProblem(
+                    new Dictionary<string, string[]> { ["password"] = [.. result.Errors] }),
+                _ => Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "This reset link does not work",
+                    detail: "It may have expired or already been used. Ask for a new one."),
+            };
+        }).RequireRateLimiting(AuthRateLimiting.PolicyName);
 
         // No use-case class here: there is nothing to decide, only a cookie to remove.
         group.MapPost("/sign-out", async (IReaderAccounts accounts, CancellationToken cancellationToken) =>

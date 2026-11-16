@@ -25,6 +25,7 @@ export function startFakeServer(): FakeServer {
 
   // Sensible defaults that almost every test needs.
   server.on('GET', '/api/accounts/antiforgery-token', { status: 200, body: { token: 'test-token' } })
+  server.on('GET', '/api/accounts/external/providers', { status: 200, body: [] })
 
   vi.stubGlobal(
     'fetch',

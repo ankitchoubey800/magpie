@@ -45,7 +45,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Create the local settings file
-        run: cp infra/.env.example infra/.env
+        # The tests below make far more than 10 sign-in requests a minute from
+        # one address, so CI raises the limit. A later step lowers it again to
+        # prove the limit works.
+        run: |
+          cp infra/.env.example infra/.env
+          sed -i 's/^AUTH_REQUESTS_PER_MINUTE=.*/AUTH_REQUESTS_PER_MINUTE=1000/' infra/.env
       - name: Start everything
         # No "--wait" here: the one-off migration container exits on purpose,
         # and the retries in the next step do the waiting.
@@ -73,6 +78,37 @@ jobs:
           done
           echo "who-am-I with the old cookie after restart: HTTP $status"
           test "$status" = "200"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Browser tests (Playwright, real Chromium)
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: Restart Accounts with the real rate limit and a placeholder Google client
+        run: |
+          AUTH_REQUESTS_PER_MINUTE=10 GOOGLE_CLIENT_ID=ci-placeholder GOOGLE_CLIENT_SECRET=ci-placeholder \
+            docker compose up --detach accounts
+          curl --fail --silent --show-error --retry 15 --retry-delay 2 --retry-all-errors \
+            http://localhost:5101/health/ready
+      - name: Continue-with-Google sends the browser to Google with OUR public address
+        run: |
+          target=$(curl --silent --output /dev/null --write-out '%{redirect_url}' \
+            http://localhost:8080/api/accounts/external/Google/start)
+          echo "$target" | sed 's/state=[^&]*/state=.../'
+          echo "$target" | grep --quiet '^https://accounts.google.com/'
+          echo "$target" | grep --quiet 'redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Faccounts%2Fexternal%2Fgoogle%2Fsignin'
+      - name: Break it - guess passwords fast
+        run: |
+          python3 infra/smoke/guess_passwords.py 30 | tee guess.txt
+          email=$(sed -n 's/^GUESS_EMAIL=//p' guess.txt)
+          docker compose exec -T postgres psql -U magpie -d magpie_accounts -c \
+            "SELECT \"AccessFailedCount\" AS failed_count, \"LockoutEnd\" IS NOT NULL AS locked FROM users WHERE \"Email\" = '$email';"
+          grep --quiet 'first 429 at guess number: 9' guess.txt
       - name: Break it - stop PostgreSQL
         run: |
           show() { echo "--- $1"; curl --silent --max-time 20 --write-out '\nHTTP %{http_code} %{content_type}\n' "$1" || true; }

@@ -14,7 +14,9 @@ export default defineConfig({
     // Anything starting with /api is forwarded to the gateway, so the React
     // code can always use relative addresses like "/api/accounts/ping".
     proxy: {
-      '/api': { target: gatewayUrl, changeOrigin: true },
+      // xfwd adds the X-Forwarded-... headers, so the backend still learns the
+      // address you typed (localhost:5173) even though Vite passes the request on.
+      '/api': { target: gatewayUrl, changeOrigin: true, xfwd: true },
     },
   },
   test: {

@@ -29,4 +29,16 @@ public static class AccountEmails
 
          If this was not you, there is nothing you need to do. Your account has not been changed.
          """);
+
+    public static EmailMessage ResetYourPassword(EmailAddress to, Uri resetLink) => new(
+        to.Value,
+        "Reset your Magpie password",
+        $"""
+         Someone (probably you) asked to reset the password for this Magpie account.
+
+         Open this link to choose a new password:
+         {resetLink}
+
+         The link works for 1 hour and only once. If you did not ask for this, ignore this email. Your password has not been changed.
+         """);
 }
