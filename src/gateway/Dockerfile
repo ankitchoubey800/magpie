@@ -6,6 +6,7 @@ WORKDIR /src
 
 COPY global.json ./
 COPY src/shared/Magpie.Defaults/Magpie.Defaults.csproj src/shared/Magpie.Defaults/
+COPY src/shared/Magpie.Mediator/Magpie.Mediator.csproj src/shared/Magpie.Mediator/
 COPY src/gateway/Magpie.Gateway/Magpie.Gateway.csproj src/gateway/Magpie.Gateway/
 RUN dotnet restore src/gateway/Magpie.Gateway/Magpie.Gateway.csproj
 

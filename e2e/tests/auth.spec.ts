@@ -33,7 +33,7 @@ async function chooseTopics(page: Page, ...topics: string[]) {
   await page.getByRole('button', { name: 'Continue' }).click()
 }
 
-test('a signed-out visitor is sent to the sign-in page, async ({ page }) => {
+test('a signed-out visitor is sent to the sign-in page', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
