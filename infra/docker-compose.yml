@@ -3,6 +3,7 @@
 #   Stop:   docker compose -f infra/docker-compose.yml down
 #   Open:   http://localhost:8080      (the website)
 #           http://localhost:8025      (Mailpit: every email the system "sends")
+#           http://localhost:5102/health/ready   (the collector, which has no pages)
 # Values written as ${NAME} come from infra/.env (see infra/.env.example).
 
 name: magpie
@@ -85,6 +86,50 @@ services:
       # directly during experiments. Removed in week 17, when the gateway
       # becomes the only way in.
       - "127.0.0.1:5101:8080"
+
+  # One-off job: create the collector's own database and tables, then add the
+  # sources from the seed file that are not there yet. Safe to run every time.
+  collector-migrate:
+    image: magpie-collector
+    build:
+      context: ..
+      dockerfile: src/services/collector/Dockerfile
+    command: ["--migrate", "--seed-sources", "/seed/sources.json"]
+    environment:
+      ConnectionStrings__CollectorDb: "Host=postgres;Port=5432;Database=magpie_collector;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=5;Command Timeout=30"
+    volumes:
+      - ${COLLECTOR_SEED_FILE:-./seed/sources.json}:/seed/sources.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # The collector has no route in the gateway: nothing outside ever calls it.
+  collector:
+    image: magpie-collector
+    build:
+      context: ..
+      dockerfile: src/services/collector/Dockerfile
+    environment:
+      # A separate DATABASE on the same server. Each service owns its own data.
+      ConnectionStrings__CollectorDb: "Host=postgres;Port=5432;Database=magpie_collector;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Timeout=5;Command Timeout=10"
+      Collector__ContactUrl: "${COLLECTOR_CONTACT_URL}"
+      Collector__TickSeconds: "${COLLECTOR_TICK_SECONDS:-30}"
+      Collector__PerSourceTimeoutSeconds: "${COLLECTOR_PER_SOURCE_TIMEOUT_SECONDS:-20}"
+      Collector__HttpTimeoutSeconds: "${COLLECTOR_HTTP_TIMEOUT_SECONDS:-8}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      collector-migrate:
+        condition: service_completed_successfully
+    extra_hosts:
+      # Lets the container reach a program on your own machine (used by the
+      # week 5 experiment). Docker Desktop provides this name by itself;
+      # on Linux this line is what makes it exist.
+      - "host.docker.internal:host-gateway"
+    ports:
+      # Laptop-only, for its health endpoints.
+      - "127.0.0.1:5102:8080"
 
   web:
     build:

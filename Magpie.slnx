@@ -11,6 +11,13 @@
     <Project Path="src/services/accounts/Magpie.Accounts.Infrastructure/Magpie.Accounts.Infrastructure.csproj" />
     <Project Path="src/services/accounts/Magpie.Accounts.Tests/Magpie.Accounts.Tests.csproj" />
   </Folder>
+  <Folder Name="/src/services/collector/">
+    <Project Path="src/services/collector/Magpie.Collector.Application/Magpie.Collector.Application.csproj" />
+    <Project Path="src/services/collector/Magpie.Collector.Domain/Magpie.Collector.Domain.csproj" />
+    <Project Path="src/services/collector/Magpie.Collector.Infrastructure/Magpie.Collector.Infrastructure.csproj" />
+    <Project Path="src/services/collector/Magpie.Collector.Tests/Magpie.Collector.Tests.csproj" />
+    <Project Path="src/services/collector/Magpie.Collector.Worker/Magpie.Collector.Worker.csproj" />
+  </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Magpie.Defaults/Magpie.Defaults.csproj" />
     <Project Path="src/shared/Magpie.Mediator/Magpie.Mediator.csproj" />
