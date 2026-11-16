@@ -72,6 +72,9 @@ test('forgot password: reset by email, old password stops working, new one works
 
   await page.goto('/sign-in')
   await page.getByRole('link', { name: 'Forgot your password?' }).click()
+  // Wait until the new page is really showing BEFORE typing. Both pages have
+  // an "Email" box; without this line the test sometimes typed into the old one.
+  await expect(page.getByRole('heading', { name: 'Forgot your password?' })).toBeVisible()
   await page.getByLabel('Email').fill(email)
   await page.getByRole('button', { name: 'Send reset link' }).click()
   await expect(page.getByRole('heading', { name: 'Check your email' })).toBeVisible()

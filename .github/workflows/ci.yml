@@ -78,8 +78,6 @@ jobs:
           done
           echo "who-am-I with the old cookie after restart: HTTP $status"
           test "$status" = "200"
-      - name: TEMP stress
-        run: python3 infra/smoke/_tmp_stress.py; docker compose logs accounts --no-color --tail 60 | grep -E 'Warning|Error' | cut -c1-900 | tail -8 || true
       - uses: actions/setup-node@v5
         with:
           node-version: 26
@@ -93,7 +91,7 @@ jobs:
           npx playwright test
       - name: Show Accounts logs if the browser tests failed
         if: failure()
-        run: docker compose logs accounts --no-color --tail 200
+        run: docker compose logs accounts gateway --no-color --tail 200
       - name: Restart Accounts with the real rate limit and a placeholder Google client
         run: |
           AUTH_REQUESTS_PER_MINUTE=10 GOOGLE_CLIENT_ID=ci-placeholder GOOGLE_CLIENT_SECRET=ci-placeholder \
