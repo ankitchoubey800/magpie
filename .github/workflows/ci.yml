@@ -100,9 +100,11 @@ jobs:
             'SELECT s."Name" AS source, count(i."Id") AS items, s."ConsecutiveFailures" AS failures, coalesce(s."LastError", $$ $$) AS last_error
                FROM sources s LEFT JOIN collected_items i ON i."SourceId" = s."Id" GROUP BY s."Id" ORDER BY s."Name";'
           echo "--- what the sources saw (first lines):"; head -n 4 bad-sources.log
-          test "$(query $$SELECT count(*) FROM collected_items i JOIN sources s ON s."Id" = i."SourceId" WHERE s."Name" = '1 good'$$)" = "3"
-          test "$(query $$SELECT count(*) FROM collected_items i JOIN sources s ON s."Id" = i."SourceId" WHERE s."Name" = '2 flaky'$$)" = "3"
-          test "$(query $$SELECT count(*) FROM sources WHERE "ConsecutiveFailures" = 1 AND "Name" IN ('3 garbage', '4 hang', '5 huge')$$)" = "3"
+          items_of() { query "SELECT count(*) FROM collected_items i JOIN sources s ON s.\"Id\" = i.\"SourceId\" WHERE s.\"Name\" = '$1'"; }
+          test "$(items_of '1 good')" = "3"
+          test "$(items_of '2 flaky')" = "3"
+          test "$(query "SELECT count(*) FROM sources WHERE \"ConsecutiveFailures\" = 1 AND \"LastError\" IS NOT NULL AND \"Name\" IN ('3 garbage', '4 hang', '5 huge')")" = "3"
+          echo "healthy sources collected in full, broken sources recorded and backed off"
           curl --fail --silent --show-error http://localhost:5102/health/live; echo
       - uses: actions/setup-node@v5
         with:
