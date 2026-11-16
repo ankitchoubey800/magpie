@@ -1,6 +1,7 @@
 using Magpie.Accounts.Api.Endpoints;
 using Magpie.Accounts.Api.ErrorHandling;
 using Magpie.Accounts.Api.Security;
+using Magpie.Accounts.Application.PasswordReset;
 using Magpie.Accounts.Application.Ping;
 using Magpie.Accounts.Application.Registration;
 using Magpie.Accounts.Application.SignIn;
@@ -23,6 +24,9 @@ builder.Services.AddExceptionHandler<DependencyUnavailableExceptionHandler>();
 // Logging, Problem Details and health checks, the same in every Magpie service.
 builder.AddMagpieDefaults(GetPingHandler.ServiceName);
 
+// This service sits behind the gateway: believe its X-Forwarded-... headers.
+builder.TrustGatewayForwardedHeaders();
+
 // Infrastructure: PostgreSQL, EF Core, Identity, email.
 builder.Services.AddAccountsInfrastructure();
 
@@ -36,6 +40,8 @@ builder.Services.AddScoped<RegisterReaderHandler>();
 builder.Services.AddScoped<ResendConfirmationHandler>();
 builder.Services.AddScoped<ConfirmEmailHandler>();
 builder.Services.AddScoped<SignInHandler>();
+builder.Services.AddScoped<RequestPasswordResetHandler>();
+builder.Services.AddScoped<ResetPasswordHandler>();
 
 var app = builder.Build();
 
@@ -53,12 +59,15 @@ if (args.Contains("--migrate"))
 // --- 3. Build the request pipeline (what happens to each request) ----------
 // Order matters: each line wraps everything below it.
 
+app.UseForwardedHeaders(); // learn the reader's real address from the gateway
 app.UseMagpieDefaults();   // errors become Problem Details
+app.UseRateLimiter();      // too many attempts from one address? stop here
 app.UseAuthentication();   // read the session cookie: who is this?
 app.UseAuthorization();    // is that person allowed to call this endpoint?
 
 app.MapMagpieHealthEndpoints();
 app.MapPingEndpoints();
 app.MapAuthEndpoints();
+app.MapExternalSignInEndpoints();
 
 app.Run();

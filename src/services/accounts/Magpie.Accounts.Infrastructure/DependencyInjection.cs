@@ -58,9 +58,15 @@ public static class DependencyInjection
             })
             .AddSignInManager()
             .AddDefaultTokenProviders()
+            .AddTokenProvider<PasswordResetTokenProvider>(PasswordResetTokenProvider.ProviderName)
             .AddAccountsStores();
 
+        // Reset links use their own, shorter-lived token maker.
+        services.Configure<IdentityOptions>(options =>
+            options.Tokens.PasswordResetTokenProvider = PasswordResetTokenProvider.ProviderName);
+
         services.AddScoped<IReaderAccounts, IdentityReaderAccounts>();
+        services.AddScoped<IExternalSignIn, IdentityExternalSignIn>();
 
         // --- Email ---
         services.AddScoped<IEmailSender, SmtpEmailSender>();

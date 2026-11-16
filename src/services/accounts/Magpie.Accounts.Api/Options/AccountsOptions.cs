@@ -26,4 +26,19 @@ public sealed class AccountsOptions
     /// In a container this MUST point at a volume, or every restart signs everyone out.
     /// </summary>
     public string? DataProtectionKeysPath { get; set; }
+
+    /// <summary>
+    /// How many sign-up, sign-in and reset requests one network address may
+    /// make per minute before it is told to slow down (429).
+    /// </summary>
+    [Range(1, 1_000_000)]
+    public int AuthRequestsPerMinute { get; set; } = 10;
+
+    /// <summary>
+    /// How often a session cookie is re-checked against the account (minutes).
+    /// 0 = on every request. This is how long a stolen or stale cookie can
+    /// keep working after a password reset.
+    /// </summary>
+    [Range(0, 60)]
+    public int SessionRecheckMinutes { get; set; } = 5;
 }

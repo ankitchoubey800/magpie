@@ -30,8 +30,15 @@ public static class SecuritySetup
             new Uri(serviceProvider.GetRequiredService<IOptions<AccountsOptions>>().Value.PublicBaseUrl)));
 
         // --- Who are you? (authentication with a session cookie) ---
-        services.AddAuthentication(IdentityConstants.ApplicationScheme)
-            .AddIdentityCookies();
+        var authentication = services.AddAuthentication(IdentityConstants.ApplicationScheme);
+        authentication.AddIdentityCookies();
+        authentication.AddGoogleIfConfigured(builder.Configuration);
+
+        // How often each session cookie is re-checked against the account's
+        // security stamp. See AccountsOptions.SessionRecheckMinutes.
+        services.AddOptions<SecurityStampValidatorOptions>()
+            .Configure<IOptions<AccountsOptions>>((validator, accounts) =>
+                validator.ValidationInterval = TimeSpan.FromMinutes(accounts.Value.SessionRecheckMinutes));
 
         services.AddOptions<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme)
             .Configure<IOptions<AccountsOptions>>((cookie, accounts) =>
@@ -79,6 +86,12 @@ public static class SecuritySetup
             // the cloud weeks; see the chapter's "carried forward" list.)
             options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         });
+
+        // --- Slow down guessing (rate limiting) ---
+        services.AddAuthRateLimiting();
+
+        // SignInManager and the outside sign-in adapter need the current request.
+        services.AddHttpContextAccessor();
 
         // --- The keys that encrypt cookies and sign tokens (data protection) ---
         // The application name must be identical in every copy of this service,

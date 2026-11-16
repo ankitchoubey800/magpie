@@ -29,6 +29,39 @@ public interface IReaderAccounts
     Task<bool> SignInAsync(EmailAddress email, string password, CancellationToken cancellationToken);
 
     Task SignOutAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Returns a fresh reset token if a CONFIRMED account with this email exists;
+    /// otherwise null.
+    /// </summary>
+    Task<PasswordResetTicket?> CreatePasswordResetAsync(EmailAddress email, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets a new password if the token is valid. A successful reset also makes
+    /// the token unusable and ends every existing session of that reader.
+    /// </summary>
+    Task<ResetPasswordResult> ResetPasswordAsync(
+        string readerId, string token, string newPassword, CancellationToken cancellationToken);
+}
+
+/// <summary>What a reader needs in order to choose a new password.</summary>
+public sealed record PasswordResetTicket(string ReaderId, string Token);
+
+public enum ResetPasswordStatus
+{
+    Done,
+    InvalidLink,
+    RejectedPassword,
+}
+
+public sealed record ResetPasswordResult(ResetPasswordStatus Status, IReadOnlyList<string> Errors)
+{
+    public static readonly ResetPasswordResult Done = new(ResetPasswordStatus.Done, []);
+
+    public static readonly ResetPasswordResult InvalidLink = new(ResetPasswordStatus.InvalidLink, []);
+
+    public static ResetPasswordResult Rejected(IReadOnlyList<string> errors) =>
+        new(ResetPasswordStatus.RejectedPassword, errors);
 }
 
 /// <summary>What a reader needs in order to confirm their email address.</summary>

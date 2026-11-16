@@ -15,5 +15,13 @@ public sealed class AccountLinks(Uri publicBaseUrl)
         return new Uri(publicBaseUrl, $"/confirm-email?{query}");
     }
 
+    public Uri ResetPassword(PasswordResetTicket ticket)
+    {
+        var query =
+            $"readerId={Uri.EscapeDataString(ticket.ReaderId)}&token={Uri.EscapeDataString(ticket.Token)}";
+
+        return new Uri(publicBaseUrl, $"/reset-password?{query}");
+    }
+
     public Uri SignIn() => new(publicBaseUrl, "/sign-in");
 }

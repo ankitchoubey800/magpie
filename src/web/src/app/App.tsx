@@ -1,7 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router'
 import { CheckEmailPage } from '../features/auth/CheckEmailPage.tsx'
 import { ConfirmEmailPage } from '../features/auth/ConfirmEmailPage.tsx'
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.tsx'
 import { ProtectedRoute } from '../features/auth/ProtectedRoute.tsx'
+import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.tsx'
 import { SignInPage } from '../features/auth/SignInPage.tsx'
 import { SignUpPage } from '../features/auth/SignUpPage.tsx'
 import { HomePage } from '../features/home/HomePage.tsx'
@@ -17,6 +19,8 @@ export default function App() {
         <Route path="/check-email" element={<CheckEmailPage />} />
         <Route path="/confirm-email" element={<ConfirmEmailPage />} />
         <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Signed-in readers only */}
         <Route element={<ProtectedRoute />}>

@@ -1,6 +1,7 @@
 using Magpie.Accounts.Application.Abstractions;
 using Magpie.Accounts.Infrastructure.Persistence;
 using Magpie.Accounts.Tests.Fakes;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -30,12 +31,23 @@ public sealed class AccountsApiFactory : WebApplicationFactory<Program>, IAsyncL
             {
                 ["ConnectionStrings:AccountsDb"] = _postgres.GetConnectionString(),
                 ["Accounts:PublicBaseUrl"] = "https://magpie.test",
+                // All tests come from one "address", so the real limit of 10 a
+                // minute would trip constantly. One test lowers it on purpose.
+                ["Accounts:AuthRequestsPerMinute"] = "100000",
+                // Re-check the session on every request, so "a reset ends all
+                // sessions" can be tested without waiting five minutes.
+                ["Accounts:SessionRecheckMinutes"] = "0",
             }));
 
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IEmailSender>();
             services.AddSingleton<IEmailSender>(Emails);
+
+            // A stand-in for Google, so the linking rules can be tested without
+            // a Google account or an internet connection.
+            services.AddAuthentication()
+                .AddScheme<AuthenticationSchemeOptions, FakeGoogleHandler>(FakeGoogleHandler.SchemeName, null);
         });
     }
 

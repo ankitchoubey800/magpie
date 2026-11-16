@@ -61,6 +61,11 @@ services:
       # The address readers type in their browser. Used for links in emails.
       Accounts__PublicBaseUrl: "http://localhost:8080"
       Accounts__DataProtectionKeysPath: "/keys"
+      # How many sign-up/sign-in/reset requests one network address may make per minute.
+      Accounts__AuthRequestsPerMinute: "${AUTH_REQUESTS_PER_MINUTE:-10}"
+      # Leave both empty to switch "Continue with Google" off.
+      Authentication__Google__ClientId: "${GOOGLE_CLIENT_ID:-}"
+      Authentication__Google__ClientSecret: "${GOOGLE_CLIENT_SECRET:-}"
       Email__Host: "mailpit"
       Email__Port: "1025"
     volumes:
