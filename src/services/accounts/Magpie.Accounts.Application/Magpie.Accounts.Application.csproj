@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Magpie.Accounts.Domain\Magpie.Accounts.Domain.csproj" />
+    <ProjectReference Include="..\..\..\shared\Magpie.Mediator\Magpie.Mediator.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

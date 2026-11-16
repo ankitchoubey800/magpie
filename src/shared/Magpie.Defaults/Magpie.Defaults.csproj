@@ -11,5 +11,8 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Magpie.Mediator\Magpie.Mediator.csproj" />
+  </ItemGroup>
 
 </Project>

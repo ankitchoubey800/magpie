@@ -24,6 +24,23 @@ public sealed partial class ApiSession(HttpClient client)
         return await client.SendAsync(request);
     }
 
+    public async Task<HttpResponseMessage> PutAsync(string path, object body)
+    {
+        _antiforgeryToken ??= await FetchAntiforgeryTokenAsync();
+
+        using var request = new HttpRequestMessage(HttpMethod.Put, path) { Content = JsonContent.Create(body) };
+        request.Headers.Add("X-XSRF-TOKEN", _antiforgeryToken);
+        return await client.SendAsync(request);
+    }
+
+    /// <summary>Registers, confirms and signs in: a ready-to-use signed-in reader.</summary>
+    public async Task SignUpAndSignInAsync(CapturingEmailSender emails, string email, string password)
+    {
+        await RegisterAndConfirmAsync(emails, email, password);
+        (await PostAsync("/api/accounts/sign-in", new { email, password })).EnsureSuccessStatusCode();
+        ForgetAntiforgeryToken();
+    }
+
     /// <summary>Call after sign-in or sign-out: the token is tied to who is signed in.</summary>
     public void ForgetAntiforgeryToken() => _antiforgeryToken = null;
 

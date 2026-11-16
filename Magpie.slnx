@@ -13,5 +13,6 @@
   </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Magpie.Defaults/Magpie.Defaults.csproj" />
+    <Project Path="src/shared/Magpie.Mediator/Magpie.Mediator.csproj" />
   </Folder>
 </Solution>
