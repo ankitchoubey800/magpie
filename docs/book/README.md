@@ -8,6 +8,7 @@ code shown in the book is always the code in the repository.
 | 1 | Project skeleton | [chapter-01-the-walking-skeleton.md](chapter-01-the-walking-skeleton.md) |
 | 2 | Login and signup, part 1 | [chapter-02-who-goes-there.md](chapter-02-who-goes-there.md) |
 | 3 | Login and signup, part 2 | [chapter-03-locking-the-door-properly.md](chapter-03-locking-the-door-properly.md) |
+| 4 | Interests | [chapter-04-tell-me-what-you-like.md](chapter-04-tell-me-what-you-like.md) |
 
 To rebuild a chapter against a commit:
 

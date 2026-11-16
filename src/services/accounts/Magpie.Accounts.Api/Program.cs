@@ -1,6 +1,7 @@
 using Magpie.Accounts.Api.Endpoints;
 using Magpie.Accounts.Api.ErrorHandling;
 using Magpie.Accounts.Api.Security;
+using Magpie.Accounts.Application.Interests;
 using Magpie.Accounts.Application.PasswordReset;
 using Magpie.Accounts.Application.Ping;
 using Magpie.Accounts.Application.Registration;
@@ -43,6 +44,10 @@ builder.Services.AddScoped<SignInHandler>();
 builder.Services.AddScoped<RequestPasswordResetHandler>();
 builder.Services.AddScoped<ResetPasswordHandler>();
 
+// From week 4, use cases are dispatched by the mediator. This one line finds and
+// registers every handler in the Application project.
+builder.Services.AddMagpieMediator(typeof(GetCategoriesQuery).Assembly);
+
 var app = builder.Build();
 
 // --- 2. One-off jobs ---------------------------------------------------------
@@ -69,5 +74,6 @@ app.MapMagpieHealthEndpoints();
 app.MapPingEndpoints();
 app.MapAuthEndpoints();
 app.MapExternalSignInEndpoints();
+app.MapInterestEndpoints();
 
 app.Run();

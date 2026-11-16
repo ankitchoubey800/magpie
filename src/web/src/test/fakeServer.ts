@@ -10,8 +10,30 @@ type Handler = Reply | ((body: unknown) => Reply)
 export interface FakeServer {
   /** Every call made, in order, for assertions. */
   calls: { method: string; path: string; body: unknown; headers: Record<string, string> }[]
-  on(method: 'GET' | 'POST', path: string, handler: Handler): FakeServer
+  on(method: 'GET' | 'POST' | 'PUT', path: string, handler: Handler): FakeServer
 }
+
+/** A small tree in the same shape the real server returns. */
+export const sampleCategories = [
+  {
+    id: 1,
+    name: 'Technology',
+    topics: [
+      { id: 101, slug: 'programming', name: 'Programming' },
+      { id: 102, slug: 'ai-machine-learning', name: 'AI & Machine Learning' },
+      { id: 103, slug: 'cloud-devops', name: 'Cloud & DevOps' },
+      { id: 104, slug: 'security', name: 'Security' },
+    ],
+  },
+  {
+    id: 2,
+    name: 'Science',
+    topics: [
+      { id: 201, slug: 'space', name: 'Space' },
+      { id: 202, slug: 'physics', name: 'Physics' },
+    ],
+  },
+]
 
 export function startFakeServer(): FakeServer {
   const routes = new Map<string, Handler>()
@@ -26,6 +48,10 @@ export function startFakeServer(): FakeServer {
   // Sensible defaults that almost every test needs.
   server.on('GET', '/api/accounts/antiforgery-token', { status: 200, body: { token: 'test-token' } })
   server.on('GET', '/api/accounts/external/providers', { status: 200, body: [] })
+  // A reader who has already chosen topics, so tests about other things are
+  // not sent to the onboarding page. Tests about interests override these.
+  server.on('GET', '/api/accounts/me/interests', { status: 200, body: { categoryIds: [101, 102, 103] } })
+  server.on('GET', '/api/accounts/categories', { status: 200, body: sampleCategories })
 
   vi.stubGlobal(
     'fetch',

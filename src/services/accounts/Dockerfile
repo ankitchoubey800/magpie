@@ -9,6 +9,7 @@ WORKDIR /src
 # layer, so packages are downloaded again only when a .csproj changes.
 COPY global.json ./
 COPY src/shared/Magpie.Defaults/Magpie.Defaults.csproj src/shared/Magpie.Defaults/
+COPY src/shared/Magpie.Mediator/Magpie.Mediator.csproj src/shared/Magpie.Mediator/
 COPY src/services/accounts/Magpie.Accounts.Domain/Magpie.Accounts.Domain.csproj src/services/accounts/Magpie.Accounts.Domain/
 COPY src/services/accounts/Magpie.Accounts.Application/Magpie.Accounts.Application.csproj src/services/accounts/Magpie.Accounts.Application/
 COPY src/services/accounts/Magpie.Accounts.Infrastructure/Magpie.Accounts.Infrastructure.csproj src/services/accounts/Magpie.Accounts.Infrastructure/

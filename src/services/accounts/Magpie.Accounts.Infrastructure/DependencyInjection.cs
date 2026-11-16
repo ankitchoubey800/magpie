@@ -1,4 +1,5 @@
 using Magpie.Accounts.Application.Abstractions;
+using Magpie.Accounts.Application.Interests;
 using Magpie.Accounts.Infrastructure.Email;
 using Magpie.Accounts.Infrastructure.Identity;
 using Magpie.Accounts.Infrastructure.Persistence;
@@ -67,6 +68,10 @@ public static class DependencyInjection
 
         services.AddScoped<IReaderAccounts, IdentityReaderAccounts>();
         services.AddScoped<IExternalSignIn, IdentityExternalSignIn>();
+
+        // --- Interests: one door for reading, one for writing ---
+        services.AddScoped<IInterestQueries, InterestQueries>();
+        services.AddScoped<IInterestStore, InterestStore>();
 
         // --- Email ---
         services.AddScoped<IEmailSender, SmtpEmailSender>();
