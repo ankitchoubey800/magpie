@@ -79,15 +79,24 @@ async function getAntiforgeryToken(): Promise<string> {
   return antiforgeryToken
 }
 
-export async function apiPost<T = void>(path: string, body?: unknown): Promise<T> {
+export function apiPost<T = void>(path: string, body?: unknown): Promise<T> {
+  return send<T>('POST', path, body)
+}
+
+/** PUT means "replace the whole thing with this". Sending it twice gives the same result as once. */
+export function apiPut<T = void>(path: string, body: unknown): Promise<T> {
+  return send<T>('PUT', path, body)
+}
+
+async function send<T>(method: 'POST' | 'PUT', path: string, body?: unknown): Promise<T> {
   try {
-    return await request<T>('POST', path, body, undefined, await getAntiforgeryToken())
+    return await request<T>(method, path, body, undefined, await getAntiforgeryToken())
   } catch (error) {
     // The token can go stale (for example, the reader signed in from another
     // tab). When the server says so, fetch a fresh one and try exactly once more.
     if (error instanceof ApiError && error.problem.code === ANTIFORGERY_PROBLEM_CODE) {
       resetAntiforgeryToken()
-      return await request<T>('POST', path, body, undefined, await getAntiforgeryToken())
+      return await request<T>(method, path, body, undefined, await getAntiforgeryToken())
     }
     throw error
   }
@@ -98,7 +107,7 @@ export async function apiPost<T = void>(path: string, body?: unknown): Promise<T
 // ---------------------------------------------------------------------------
 
 async function request<T>(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PUT',
   path: string,
   body?: unknown,
   signal?: AbortSignal,

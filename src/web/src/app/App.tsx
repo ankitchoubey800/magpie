@@ -7,6 +7,8 @@ import { ResetPasswordPage } from '../features/auth/ResetPasswordPage.tsx'
 import { SignInPage } from '../features/auth/SignInPage.tsx'
 import { SignUpPage } from '../features/auth/SignUpPage.tsx'
 import { HomePage } from '../features/home/HomePage.tsx'
+import { InterestsSettingsPage } from '../features/interests/InterestsSettingsPage.tsx'
+import { OnboardingPage } from '../features/interests/OnboardingPage.tsx'
 
 // App is the "shell": it maps addresses to pages and owns no business logic.
 export default function App() {
@@ -25,6 +27,8 @@ export default function App() {
         {/* Signed-in readers only */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<HomePage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/settings/interests" element={<InterestsSettingsPage />} />
         </Route>
 
         {/* Anything else: go home (which sends signed-out visitors to sign-in) */}

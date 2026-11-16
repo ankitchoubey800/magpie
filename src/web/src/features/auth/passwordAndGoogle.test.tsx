@@ -1,23 +1,11 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
-import App from '../../app/App.tsx'
 import { startFakeServer, type FakeServer } from '../../test/fakeServer.ts'
-import { AuthProvider } from './AuthProvider.tsx'
+import { renderAppAt } from '../../test/renderApp.tsx'
 
 const asha = { id: 'reader-1', email: 'asha@example.com' }
 const ping = { service: 'accounts', databaseTimeUtc: '2026-11-15T10:00:00+00:00', roundTripMs: 3, isSlow: false }
-
-function renderAppAt(address: string) {
-  render(
-    <MemoryRouter initialEntries={[address]}>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </MemoryRouter>,
-  )
-}
 
 function signedOutServer(): FakeServer {
   return startFakeServer().on('GET', '/api/accounts/me', { status: 401, body: { title: 'Unauthorized' } })

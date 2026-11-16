@@ -24,7 +24,16 @@ async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Sign in' }).click()
 }
 
-test('a signed-out visitor is sent to the sign-in page', async ({ page }) => {
+/** A brand-new reader is asked for their topics before they see the home page. */
+async function chooseTopics(page: Page, ...topics: string[]) {
+  await expect(page.getByRole('heading', { name: 'What are you interested in?' })).toBeVisible()
+  for (const topic of topics) {
+    await page.getByLabel(topic, { exact: true }).check()
+  }
+  await page.getByRole('button', { name: 'Continue' }).click()
+}
+
+test('a signed-out visitor is sent to the sign-in page, async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
@@ -35,6 +44,7 @@ test('sign up, confirm by email, sign in, stay signed in, sign out', async ({ pa
   await signUpAndConfirm(page, request, email)
 
   await signIn(page, email, PASSWORD)
+  await chooseTopics(page, 'Programming', 'Space', 'Books')
   await expect(page.getByText('Signed in as')).toContainText(email)
 
   // The three safety flags, as the browser itself reports them.
@@ -88,5 +98,31 @@ test('forgot password: reset by email, old password stops working, new one works
   await expect(page.getByRole('alert')).toContainText('Sign-in failed')
 
   await signIn(page, email, newPassword)
-  await expect(page.getByText('Signed in as')).toContainText(email)
+  await expect(page.getByRole('heading', { name: 'What are you interested in?' })).toBeVisible()
+})
+
+test('topics chosen at onboarding survive signing out and in, and can be changed', async ({ page, request }) => {
+  const email = newEmail()
+  await signUpAndConfirm(page, request, email)
+  await signIn(page, email, PASSWORD)
+  await chooseTopics(page, 'Programming', 'Space', 'Books')
+  await expect(page.getByText('You follow 3 topics.')).toBeVisible()
+
+  // Sign out and in again: straight to the home page, no second onboarding.
+  await page.getByRole('button', { name: 'Sign out' }).click()
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await signIn(page, email, PASSWORD)
+  await expect(page.getByText('You follow 3 topics.')).toBeVisible()
+
+  // Change them: the saved ones start ticked.
+  await page.getByRole('link', { name: 'Change your topics' }).click()
+  await expect(page.getByRole('heading', { name: 'Your topics' })).toBeVisible()
+  await expect(page.getByLabel('Programming', { exact: true })).toBeChecked()
+  await page.getByLabel('Gaming', { exact: true }).check()
+  await page.getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByText('Saved.')).toBeVisible()
+
+  // A full reload asks the server again: the change really was stored.
+  await page.goto('/')
+  await expect(page.getByText('You follow 4 topics.')).toBeVisible()
 })

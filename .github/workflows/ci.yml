@@ -92,6 +92,12 @@ jobs:
       - name: Show Accounts logs if the browser tests failed
         if: failure()
         run: docker compose logs accounts gateway --no-color --tail 200
+      - name: Experiment - what an index buys and costs (5,000,000 rows)
+        run: |
+          docker compose exec -T postgres psql -U magpie -d magpie_accounts \
+            < infra/experiments/week-04-index.sql 2>&1 | grep -vE "^(DROP|CREATE|ANALYZE|Timing is on|Pager)" | tee index.txt
+          grep --quiet 'Seq Scan' index.txt
+          grep --quiet 'ix_user_interests_category' index.txt
       - name: Restart Accounts with the real rate limit and a placeholder Google client
         run: |
           AUTH_REQUESTS_PER_MINUTE=10 GOOGLE_CLIENT_ID=ci-placeholder GOOGLE_CLIENT_SECRET=ci-placeholder \

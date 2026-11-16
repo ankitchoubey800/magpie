@@ -22,6 +22,9 @@ public class InterestsTests(AccountsApiFactory factory)
     private static async Task<int[]> MyInterestsAsync(ApiSession session) =>
         [.. (await session.Client.GetFromJsonAsync<MyInterests>("/api/accounts/me/interests"))!.CategoryIds];
 
+    private static async Task AssertInterestsAsync(ApiSession session, params int[] expected) =>
+        Assert.Equal(expected, await MyInterestsAsync(session));
+
     [Fact]
     public async Task The_category_tree_has_six_groups_of_four_topics_from_the_migration()
     {
@@ -51,13 +54,13 @@ public class InterestsTests(AccountsApiFactory factory)
 
         var save = await session.PutAsync("/api/accounts/me/interests", new { categoryIds = new[] { 103, 101, 204 } });
         Assert.Equal(HttpStatusCode.NoContent, save.StatusCode);
-        Assert.Equal([101, 103, 204], await MyInterestsAsync(session));
+        await AssertInterestsAsync(session, 101, 103, 204);
 
         await session.PostAsync("/api/accounts/sign-out");
         var later = new ApiSession(factory.CreateBrowserLikeClient());
         await later.PostAsync("/api/accounts/sign-in", new { email, password = Password });
 
-        Assert.Equal([101, 103, 204], await MyInterestsAsync(later));
+        await AssertInterestsAsync(later, 101, 103, 204);
     }
 
     [Fact]
@@ -68,7 +71,7 @@ public class InterestsTests(AccountsApiFactory factory)
 
         await session.PutAsync("/api/accounts/me/interests", new { categoryIds = new[] { 103, 401, 402, 403 } });
 
-        Assert.Equal([103, 401, 402, 403], await MyInterestsAsync(session));
+        await AssertInterestsAsync(session, 103, 401, 402, 403);
     }
 
     [Fact]
@@ -82,7 +85,7 @@ public class InterestsTests(AccountsApiFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, first.StatusCode);
         Assert.Equal(HttpStatusCode.NoContent, second.StatusCode);
-        Assert.Equal([101, 102, 103], await MyInterestsAsync(session));
+        await AssertInterestsAsync(session, 101, 102, 103);
     }
 
     [Theory]
@@ -99,7 +102,7 @@ public class InterestsTests(AccountsApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
         Assert.Contains(expectedMessage, problem.GetProperty("errors").GetProperty("categoryIds")[0].GetString());
-        Assert.Equal([201, 202, 203], await MyInterestsAsync(session));
+        await AssertInterestsAsync(session, 201, 202, 203);
     }
 
     [Fact]
